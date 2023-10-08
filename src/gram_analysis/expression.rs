@@ -6,7 +6,7 @@ use crate::{
 use super::{array_expression::array_expression, literal_expression::literal_expression};
 
 pub fn expression(
-    tokens: &'static [Token],
+    tokens: &[Token],
     cursor: usize,
 ) -> Result<GramAnalysisResult<Expression>, &str> {
     if let Some(token) = tokens.get(cursor) {

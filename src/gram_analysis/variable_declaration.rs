@@ -1,11 +1,14 @@
 use crate::{
     tokenizer::Token,
-    types::{ASTType, VariableDeclarator},
+    types::{ASTType, GramAnalysisResult, VariableDeclarator},
 };
 
 use super::{expression::expression, identifier::identifier};
 
-pub fn variable_declaration(tokens: &'static [Token], cursor: usize) {
+pub fn variable_declaration(
+    tokens: &[Token],
+    cursor: usize,
+) -> Result<GramAnalysisResult<VariableDeclarator>, &str> {
     if let Some(start_token) = tokens.get(cursor) {
         if let Ok(identifier_result) = identifier(tokens, cursor) {
             if let Some(lookaheadSymbol) = tokens.get(identifier_result.next_cursor) {
@@ -21,10 +24,15 @@ pub fn variable_declaration(tokens: &'static [Token], cursor: usize) {
                                 id: identifier_result.ast,
                                 init: expression_result.ast,
                             };
+                            return Ok(GramAnalysisResult {
+                                ast: variable_declarator,
+                                next_cursor: expression_result.next_cursor,
+                            });
                         }
                     }
                 }
             }
         }
     }
+    return Err("");
 }

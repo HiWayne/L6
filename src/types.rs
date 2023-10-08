@@ -38,6 +38,7 @@ pub enum ASTType {
     ObjectExpression,
     Literal,
     FunctionDeclaration,
+    BlockStatement,
 }
 
 impl ASTType {
@@ -49,6 +50,7 @@ impl ASTType {
     const ObjectExpression: &'static str = "ObjectExpression";
     const Literal: &'static str = "Literal";
     const FunctionDeclaration: &'static str = "FunctionDeclaration";
+    const BlockStatement: &'static str = "BlockStatement";
 }
 
 pub enum AST {
@@ -59,10 +61,11 @@ pub enum AST {
     ArrayExpression(ArrayExpression),
 }
 
-enum Body {
+pub enum Body {
     VariableDeclaration(VariableDeclaration),
     FunctionDeclaration(FunctionDeclaration),
     ExpressionStatement(ExpressionStatement),
+    BlockStatement(BlockStatement),
 }
 
 enum FunctionParams {
@@ -130,44 +133,44 @@ struct Program {
 
 pub struct Identifier {
     pub _type: ASTType,
-    pub start: u32,
-    pub end: u32,
+    pub start: usize,
+    pub end: usize,
     pub name: String,
 }
 
 pub struct VariableDeclarator {
     pub _type: ASTType,
-    pub start: u32,
-    pub end: u32,
+    pub start: usize,
+    pub end: usize,
     pub id: Identifier,
     pub init: Expression,
 }
 
-struct VariableDeclaration {
-    _type: ASTType,
-    start: u32,
-    end: u32,
-    declarations: Vec<VariableDeclarator>,
+pub struct VariableDeclaration {
+    pub _type: ASTType,
+    pub start: usize,
+    pub end: usize,
+    pub declarations: Vec<VariableDeclarator>,
 }
 
-struct ArrayExpression {
-    _type: ASTType,
-    start: u32,
-    end: u32,
-    elements: Vec<Expression>,
+pub struct ArrayExpression {
+    pub _type: ASTType,
+    pub start: usize,
+    pub end: usize,
+    pub elements: Vec<Expression>,
 }
 
 struct ObjectExpression {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     properties: Vec<Property>,
 }
 
 struct Property {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     method: bool,
     shorthand: bool,
     computed: bool,
@@ -199,8 +202,8 @@ pub struct Regex {
 
 pub struct Literal {
     pub _type: ASTType,
-    pub start: u32,
-    pub end: u32,
+    pub start: usize,
+    pub end: usize,
     pub value: LiteralType,
     pub raw: &'static str,
     pub regex: Option<Regex>,
@@ -213,8 +216,8 @@ struct ComputedPropertyKey {
 
 struct FunctionDeclaration {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     id: Identifier,
     expression: bool,
     generator: bool,
@@ -223,25 +226,25 @@ struct FunctionDeclaration {
     body: BlockStatement,
 }
 
-struct BlockStatement {
-    _type: ASTType,
-    start: u32,
-    end: u32,
-    body: Vec<Body>,
+pub struct BlockStatement {
+    pub _type: ASTType,
+    pub start: usize,
+    pub end: usize,
+    pub body: Vec<Body>,
 }
 
 struct AssignmentPattern {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     left: Identifier,
     right: AssignmentPatternRight,
 }
 
 struct MemberExpression {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     object: Expression,
     property: Expression,
     computed: bool,
@@ -250,8 +253,8 @@ struct MemberExpression {
 
 struct CallExpression {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     callee: Expression,
     arguments: Vec<Expression>,
     optional: bool,
@@ -259,15 +262,15 @@ struct CallExpression {
 
 struct ExpressionStatement {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     expression: Expression,
 }
 
 struct ConditionalExpression {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     test: Expression,
     consequent: Expression,
     alternate: Expression,
@@ -275,8 +278,8 @@ struct ConditionalExpression {
 
 struct BinaryExpression {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     left: Expression,
     operator: &'static str,
     right: Expression,
@@ -284,8 +287,8 @@ struct BinaryExpression {
 
 struct NewExpression {
     _type: ASTType,
-    start: u32,
-    end: u32,
+    start: usize,
+    end: usize,
     callee: Expression,
     arguments: Vec<Expression>,
 }

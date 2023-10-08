@@ -4,7 +4,7 @@ use crate::{
 };
 
 pub fn literal_expression(
-    tokens: &'static [Token],
+    tokens: &[Token],
     cursor: usize,
     literal_type: LiteralType,
 ) -> Result<GramAnalysisResult<Expression>, &str> {
@@ -16,10 +16,10 @@ pub fn literal_expression(
                 start: token.start,
                 end: token.end,
                 value: literal_type,
-                raw: &token_value.value,
+                raw: &token_value.value.as_str(),
                 regex: Some(Regex {
-                    pattern: &token_value.pattern,
-                    flags: &token_value.flags,
+                    pattern: &token_value.pattern.as_str(),
+                    flags: &token_value.flags.as_str(),
                 }),
             });
             return Ok(GramAnalysisResult {
@@ -33,7 +33,7 @@ pub fn literal_expression(
             start: token.start,
             end: token.end,
             value: literal_type,
-            raw: token_value,
+            raw: &token_value.as_str(),
             regex: None,
         });
         return Ok(GramAnalysisResult {

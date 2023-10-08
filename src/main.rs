@@ -62,8 +62,7 @@ use crate::tokenizer::{tokenizer, TokenValue};
 
 fn main() {
     let code = "
-        const t1 = /^w1/ig
-        let templateText = `abc${b ? `${t1 + `456${1 > 2 ? `789${t1}` : ''}`}123` : 'default'}`;
+        const t1 = [1, 2]
     ";
 
     match tokenizer(code) {
@@ -82,7 +81,7 @@ fn main() {
                 // }
                 println!("{}", &token)
             }
-            // program(&tokens);
+            program(&tokens);
         }
         Err(err) => {
             println!("{}", err);

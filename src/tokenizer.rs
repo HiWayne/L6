@@ -97,8 +97,8 @@ impl Display for TokenValue {
 pub struct Token {
     pub _type: TokenType,
     pub value: TokenValue,
-    pub start: u32,
-    pub end: u32,
+    pub start: usize,
+    pub end: usize,
 }
 
 impl Clone for Token {
@@ -194,7 +194,7 @@ fn create_lex_template_action_extract_params<'a>(
 }
 
 fn create_lex_template_action(
-) -> Box<dyn FnMut(char, u32, u32, &mut LexTemplateActionExtractParams) -> Result<(), String>> {
+) -> Box<dyn FnMut(char, usize, usize, &mut LexTemplateActionExtractParams) -> Result<(), String>> {
     let mut template_status = Vec::new();
     let mut template_stack: Vec<char> = Vec::new();
     let mut number_of_escape_characters: u16 = 0;
@@ -202,8 +202,8 @@ fn create_lex_template_action(
     let mut token = String::new();
 
     let closure = move |char: char,
-                        start: u32,
-                        current_cursor: u32,
+                        start: usize,
+                        current_cursor: usize,
                         extract_params: &mut LexTemplateActionExtractParams| {
         if extract_params.is_start {
             template_status.push(TemplateStatus::Template);
@@ -470,7 +470,7 @@ fn create_lex_regular_expression_action_extract_params<'a>(
 }
 
 fn create_lex_regular_expression_action() -> Box<
-    dyn FnMut(char, u32, u32, &mut LexRegularExpressionActionExtractParams) -> Result<(), String>,
+    dyn FnMut(char, usize, usize, &mut LexRegularExpressionActionExtractParams) -> Result<(), String>,
 > {
     let mut cache = String::new();
     let mut pattern_start = true;
@@ -495,8 +495,8 @@ fn create_lex_regular_expression_action() -> Box<
 
     let closure =
         move |char: char,
-              start: u32,
-              current_cursor: u32,
+              start: usize,
+              current_cursor: usize,
               extract_params: &mut LexRegularExpressionActionExtractParams| {
             if char == '/' && extract_params.outer_token.is_empty() && token.is_empty() {
                 token.push(char);
@@ -749,13 +749,13 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
 
     let init_string_mode = '\0';
 
-    let mut current_cursor: u32 = 0;
-    let mut current_column: u32 = 0;
-    let mut start: u32 = 0;
-    let mut start_column: u32 = 0;
-    let mut start: u32 = 0;
-    let mut end: u32 = 0;
-    let mut current_cusrosr: u32 = 0;
+    let mut current_cursor: usize = 0;
+    let mut current_column: usize = 0;
+    let mut start: usize = 0;
+    let mut start_column: usize = 0;
+    let mut start: usize = 0;
+    let mut end: usize = 0;
+    let mut current_cusrosr: usize = 0;
     let status_ref_cell = RefCell::new(Status::Initial);
     // 0-初始化、1-字符串、2-整型、3-浮点数、4-boolean、5-null、6-undefined
     let mut literal_status: LiteralStatus = LiteralStatus::Initial;
