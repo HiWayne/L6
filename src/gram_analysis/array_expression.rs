@@ -23,9 +23,12 @@ pub fn array_expression(
                     next_cursor: cursor + 2,
                 });
             } else {
-                if let Ok(element_list_result) = element_list(tokens, cursor + 1) {
+                if let Ok(mut element_list_result) = element_list(tokens, cursor + 1) {
                     if let Some(token) = tokens.get(element_list_result.next_cursor) {
                         if token._type.label == "]" {
+                            array_expression_ast
+                                .elements
+                                .append(&mut element_list_result.elements);
                             array_expression_ast.end = token.end;
                             return Ok(GramAnalysisResult {
                                 ast: Expression::ArrayExpression(Some(Box::new(

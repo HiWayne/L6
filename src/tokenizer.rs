@@ -203,7 +203,7 @@ fn create_lex_template_action(
 
     let closure = move |char: char,
                         start: usize,
-                        current_cursor: usize,
+                        next_cursor_index: usize,
                         extract_params: &mut LexTemplateActionExtractParams| {
         if extract_params.is_start {
             template_status.push(TemplateStatus::Template);
@@ -233,7 +233,7 @@ fn create_lex_template_action(
                                 },
                                 value: TokenValue::String(String::from(&token)),
                                 start,
-                                end: current_cursor,
+                                end: next_cursor_index - 1,
                             });
                             extract_params.tokens.push(Token {
                                 _type: TokenType {
@@ -247,8 +247,8 @@ fn create_lex_template_action(
                                     postfix: false,
                                 },
                                 value: TokenValue::None,
-                                start,
-                                end: current_cursor,
+                                start: next_cursor_index - 1,
+                                end: next_cursor_index,
                             });
 
                             token = String::new();
@@ -281,8 +281,8 @@ fn create_lex_template_action(
                                     postfix: false,
                                 },
                                 value: TokenValue::None,
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index,
                             });
                         }
 
@@ -315,8 +315,8 @@ fn create_lex_template_action(
                                     postfix: false,
                                 },
                                 value: TokenValue::String(String::from(&token)),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 2,
                             });
                             extract_params.tokens.push(Token {
                                 _type: TokenType {
@@ -330,8 +330,8 @@ fn create_lex_template_action(
                                     postfix: false,
                                 },
                                 value: TokenValue::None,
-                                start,
-                                end: current_cursor,
+                                start: next_cursor_index - 2,
+                                end: next_cursor_index,
                             });
                             template_status.push(TemplateStatus::Expression);
                             token = String::new();
@@ -361,8 +361,8 @@ fn create_lex_template_action(
                                 postfix: false,
                             },
                             value: TokenValue::None,
-                            start,
-                            end: current_cursor,
+                            start: start,
+                            end: next_cursor_index,
                         });
                     } else if !extract_params.tokens.is_empty()
                         && extract_params.tokens.last().unwrap()._type.label == "}"
@@ -391,8 +391,8 @@ fn create_lex_template_action(
                                     postfix: false,
                                 },
                                 value: TokenValue::String(String::from(&token)),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             token = String::new();
 
@@ -422,8 +422,8 @@ fn create_lex_template_action(
                                     postfix: false,
                                 },
                                 value: TokenValue::None,
-                                start,
-                                end: current_cursor,
+                                start: next_cursor_index - 1,
+                                end: next_cursor_index,
                             });
                         } else if char == '\\' {
                             number_of_escape_characters += 1;
@@ -470,7 +470,12 @@ fn create_lex_regular_expression_action_extract_params<'a>(
 }
 
 fn create_lex_regular_expression_action() -> Box<
-    dyn FnMut(char, usize, usize, &mut LexRegularExpressionActionExtractParams) -> Result<(), String>,
+    dyn FnMut(
+        char,
+        usize,
+        usize,
+        &mut LexRegularExpressionActionExtractParams,
+    ) -> Result<(), String>,
 > {
     let mut cache = String::new();
     let mut pattern_start = true;
@@ -496,7 +501,7 @@ fn create_lex_regular_expression_action() -> Box<
     let closure =
         move |char: char,
               start: usize,
-              current_cursor: usize,
+              next_cursor_index: usize,
               extract_params: &mut LexRegularExpressionActionExtractParams| {
             if char == '/' && extract_params.outer_token.is_empty() && token.is_empty() {
                 token.push(char);
@@ -626,8 +631,8 @@ fn create_lex_regular_expression_action() -> Box<
                         flags: String::from(&flags),
                         value: String::from(token.clone()),
                     }),
-                    start,
-                    end: current_cursor,
+                    start: start,
+                    end: next_cursor_index - 1,
                 });
                 pattern = String::new();
                 flags = String::new();
@@ -667,6 +672,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
     ketwords_trie_node.insert("continue");
     ketwords_trie_node.insert("async");
     ketwords_trie_node.insert("await");
+    ketwords_trie_node.insert("get");
+    ketwords_trie_node.insert("set");
     ketwords_trie_node.insert("catch");
     ketwords_trie_node.insert("class");
     ketwords_trie_node.insert("debugger");
@@ -746,16 +753,18 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
     punctuators_trie_node.insert("&=");
     punctuators_trie_node.insert("|=");
     punctuators_trie_node.insert("^=");
+    punctuators_trie_node.insert("[");
+    punctuators_trie_node.insert("]");
 
     let init_string_mode = '\0';
 
-    let mut current_cursor: usize = 0;
+    let mut next_cursor_index: usize = 0;
     let mut current_column: usize = 0;
     let mut start: usize = 0;
     let mut start_column: usize = 0;
     let mut start: usize = 0;
     let mut end: usize = 0;
-    let mut current_cusrosr: usize = 0;
+    let mut next_cursor_index: usize = 0;
     let status_ref_cell = RefCell::new(Status::Initial);
     // 0-初始化、1-字符串、2-整型、3-浮点数、4-boolean、5-null、6-undefined
     let mut literal_status: LiteralStatus = LiteralStatus::Initial;
@@ -785,9 +794,9 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
     for char in code.chars() {
         // 更新token的开始位置
         if token.is_empty() {
-            start = current_cusrosr;
+            start = next_cursor_index;
         }
-        current_cusrosr += 1;
+        next_cursor_index += 1;
         match *status {
             // 初始状态
             Status::Initial => {
@@ -809,7 +818,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                         if let Err(error_message) = lex_template_action(
                             char,
                             start,
-                            current_cursor,
+                            next_cursor_index,
                             &mut lex_template_action_extract_params,
                         ) {
                             return Err(error_message);
@@ -865,9 +874,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                             current_punctuators_node = next_punctuators_node
 
@@ -886,8 +896,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                         } else if char == '`' {
@@ -904,8 +914,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                             *status = Status::Template;
@@ -919,7 +929,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             if let Err(error_message) = lex_template_action(
                                 char,
                                 start,
-                                current_cursor,
+                                next_cursor_index,
                                 &mut lex_template_action_extract_params,
                             ) {
                                 return Err(error_message);
@@ -943,15 +953,17 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                         postfix: false,
                                     },
                                     value: TokenValue::String(token.clone()),
-                                    start,
-                                    end: current_cursor,
+                                    start: start,
+                                    end: next_cursor_index - 1,
                                 });
+                                start = next_cursor_index - 1;
                                 *token = String::from(char);
                                 if char == '"' || char == '\'' {
                                     string_mode = char;
                                 }
                             } else {
                                 // 标识符
+                                start = next_cursor_index - 1;
                                 *status = Status::Identifier;
                                 token.push(char);
                             }
@@ -975,9 +987,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                             current_punctuators_node = next_punctuators_node;
                         // token有值时遇到空格或换行结束
@@ -995,8 +1008,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                         } else if char == '`' {
@@ -1013,8 +1026,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                             *status = Status::Template;
@@ -1028,7 +1041,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             if let Err(error_message) = lex_template_action(
                                 char,
                                 start,
-                                current_cursor,
+                                next_cursor_index,
                                 &mut lex_template_action_extract_params,
                             ) {
                                 return Err(error_message);
@@ -1050,15 +1063,16 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                         postfix: false,
                                     },
                                     value: TokenValue::String(token.clone()),
-                                    start,
-                                    end: current_cursor,
+                                    start: start,
+                                    end: next_cursor_index - 1,
                                 });
+                                start = next_cursor_index - 1;
                                 *token = String::from(char);
                                 if char == '"' || char == '\'' {
                                     string_mode = char;
                                 }
                             } else {
-                                // 标识符
+                                // 标识符，继续识别
                                 *status = Status::Identifier;
                                 token.push(char);
                             }
@@ -1097,8 +1111,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                 postfix: false,
                             },
                             value: TokenValue::None,
-                            start,
-                            end: current_cursor,
+                            start: start,
+                            end: next_cursor_index - 1,
                         });
                         *token = String::new();
                         let mut lex_template_action_extract_params =
@@ -1111,7 +1125,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                         if let Err(error_message) = lex_template_action(
                             char,
                             start,
-                            current_cursor,
+                            next_cursor_index,
                             &mut lex_template_action_extract_params,
                         ) {
                             return Err(error_message);
@@ -1130,8 +1144,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                 postfix: false,
                             },
                             value: TokenValue::String(token.to_string()),
-                            start,
-                            end: current_cursor,
+                            start: start,
+                            end: next_cursor_index - 1,
                         });
                         // 以一个新的符号开始
                         if let Some(next_punctuators_node) =
@@ -1145,6 +1159,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                         {
                             *status = Status::Keywords;
                             current_keywords_node = next_keywords_node;
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                         } else if char == ' ' || char == '\n' {
                             *status = Status::Initial;
@@ -1163,8 +1178,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.to_string()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                             *status = Status::Template;
@@ -1178,7 +1193,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             if let Err(error_message) = lex_template_action(
                                 char,
                                 start,
-                                current_cursor,
+                                next_cursor_index,
                                 &mut lex_template_action_extract_params,
                             ) {
                                 return Err(error_message);
@@ -1193,12 +1208,14 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             // 后面是字面量
                             if !matches!(literal_status, LiteralStatus::Initial) {
                                 *status = Status::Literal;
+                                start = next_cursor_index - 1;
                                 if char == '"' || char == '\'' {
                                     string_mode = char;
                                 }
                             } else {
                                 // 后面是标识符
                                 *status = Status::Identifier;
+                                start = next_cursor_index - 1;
                             }
                         }
                     } else if *token == "/" {
@@ -1239,9 +1256,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             postfix: false,
                         },
                         value: TokenValue::String(token.clone()),
-                        start,
-                        end: current_cursor,
+                        start: start,
+                        end: next_cursor_index - 1,
                     });
+                    start = next_cursor_index - 1;
                     *token = String::from(char);
                     current_punctuators_node = next_punctuators_node;
 
@@ -1260,8 +1278,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             postfix: false,
                         },
                         value: TokenValue::String(token.clone()),
-                        start,
-                        end: current_cursor,
+                        start: start,
+                        end: next_cursor_index - 1,
                     });
                     *token = String::new();
                 } else if char == '`' {
@@ -1278,8 +1296,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                             postfix: false,
                         },
                         value: TokenValue::String(token.clone()),
-                        start,
-                        end: current_cursor,
+                        start: start,
+                        end: next_cursor_index - 1,
                     });
                     *token = String::new();
                     *status = Status::Template;
@@ -1293,7 +1311,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                     if let Err(error_message) = lex_template_action(
                         char,
                         start,
-                        current_cursor,
+                        next_cursor_index,
                         &mut lex_template_action_extract_params,
                     ) {
                         return Err(error_message);
@@ -1315,9 +1333,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                 postfix: false,
                             },
                             value: TokenValue::String(token.clone()),
-                            start,
-                            end: current_cursor,
+                            start: start,
+                            end: next_cursor_index - 1,
                         });
+                        start = next_cursor_index - 1;
                         *token = String::from(char);
                         if char == '"' || char == '\'' {
                             string_mode = char;
@@ -1354,8 +1373,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                             postfix: false,
                                         },
                                         value: TokenValue::String(token.clone()),
-                                        start,
-                                        end: current_cursor,
+                                        start: start,
+                                        end: next_cursor_index - 1,
                                     });
                                     *token = String::new();
                                 }
@@ -1389,9 +1408,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                         } else if let Some(next_keywords_node) =
                             current_keywords_node.reduce_find(&char)
@@ -1411,9 +1431,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                         } else if char == ' ' || char == '\n' {
                             *status = Status::Initial;
@@ -1430,8 +1451,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                         } else {
@@ -1453,9 +1474,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                         postfix: false,
                                     },
                                     value: TokenValue::String(token.clone()),
-                                    start,
-                                    end: current_cursor,
+                                    start: start,
+                                    end: next_cursor_index - 1,
                                 });
+                                start = next_cursor_index - 1;
                                 *token = String::from(char);
                             } else {
                                 return Err(String::from("Identifier directly after number"));
@@ -1487,9 +1509,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                         } else if let Some(next_keywords_node) =
                             current_keywords_node.reduce_find(&char)
@@ -1509,9 +1532,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
+                            start = next_cursor_index - 1;
                             *token = String::from(char);
                         } else if char == ' ' || char == '\n' {
                             *status = Status::Initial;
@@ -1528,8 +1552,8 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                     postfix: false,
                                 },
                                 value: TokenValue::String(token.clone()),
-                                start,
-                                end: current_cursor,
+                                start: start,
+                                end: next_cursor_index - 1,
                             });
                             *token = String::new();
                         } else {
@@ -1551,9 +1575,10 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                                         postfix: false,
                                     },
                                     value: TokenValue::String(token.clone()),
-                                    start,
-                                    end: current_cursor,
+                                    start: start,
+                                    end: next_cursor_index - 1,
                                 });
+                                start = next_cursor_index - 1;
                                 *token = String::from(char);
                             } else {
                                 return Err(String::from("Identifier directly after number"));
@@ -1572,13 +1597,15 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                         if let Err(error_message) = lex_regular_expression_action(
                             char,
                             start,
-                            current_cursor,
+                            next_cursor_index,
                             &mut lex_regular_expression_action_extract_params,
                         ) {
                             return Err(error_message);
                         }
                     }
-                    LiteralStatus::Initial => return Err(String::from("unknown error")),
+                    LiteralStatus::Initial => {
+                        return Err(String::from("unknown error"));
+                    }
                 }
             }
             // 模板字符串状态
@@ -1593,7 +1620,7 @@ pub fn tokenizer<'a>(code: &str) -> Result<Vec<Token>, String> {
                 if let Err(error_message) = lex_template_action(
                     char,
                     start,
-                    current_cursor,
+                    next_cursor_index,
                     &mut lex_template_action_extract_params,
                 ) {
                     return Err(error_message);

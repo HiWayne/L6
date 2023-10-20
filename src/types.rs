@@ -1,9 +1,11 @@
+#[derive(Debug)]
 pub struct GramAnalysisResult<T> {
     pub ast: T,
     pub next_cursor: usize,
 }
 
-enum SourceType {
+#[derive(Debug)]
+pub enum SourceType {
     script,
     module,
 }
@@ -13,22 +15,25 @@ impl SourceType {
     const module: &'static str = "module";
 }
 
-enum Kind {
-    init,
-    get,
-    set,
+#[derive(Debug)]
+pub enum Kind {
+    Init,
+    Get,
+    Set,
 }
 
 impl Kind {
-    const init: &'static str = "init";
-    const get: &'static str = "get";
-    const set: &'static str = "set";
+    const Init: &'static str = "init";
+    const Get: &'static str = "get";
+    const Set: &'static str = "set";
 }
 
-enum PropertyKey {
+#[derive(Debug)]
+pub enum PropertyKey<'a> {
     Identifier(Identifier),
-    ComputedPropertyKey(ComputedPropertyKey),
+    ComputedPropertyKey(Expression<'a>),
 }
+#[derive(Debug)]
 pub enum ASTType {
     Program,
     VariableDeclaration,
@@ -36,9 +41,12 @@ pub enum ASTType {
     Identifier,
     ArrayExpression,
     ObjectExpression,
+    FunctionExpression,
+    ArrowFunctionExpression,
     Literal,
     FunctionDeclaration,
     BlockStatement,
+    Property,
 }
 
 impl ASTType {
@@ -48,89 +56,105 @@ impl ASTType {
     const Identifier: &'static str = "Identifier";
     const ArrayExpression: &'static str = "ArrayExpression";
     const ObjectExpression: &'static str = "ObjectExpression";
+    const FunctionExpression: &'static str = "FunctionExpression";
+    const ArrowFunctionExpression: &'static str = "ArrowFunctionExpression";
     const Literal: &'static str = "Literal";
     const FunctionDeclaration: &'static str = "FunctionDeclaration";
     const BlockStatement: &'static str = "BlockStatement";
+    const Property: &'static str = "Property";
 }
 
-pub enum AST {
-    Program(Program),
-    VariableDeclaration(VariableDeclaration),
-    VariableDeclarator(VariableDeclarator),
+#[derive(Debug)]
+pub enum AST<'a> {
+    Program(Program<'a>),
+    VariableDeclaration(VariableDeclaration<'a>),
+    VariableDeclarator(VariableDeclarator<'a>),
     Identifier(Identifier),
-    ArrayExpression(ArrayExpression),
+    ArrayExpression(ArrayExpression<'a>),
 }
 
-pub enum Body {
-    VariableDeclaration(VariableDeclaration),
-    FunctionDeclaration(FunctionDeclaration),
-    ExpressionStatement(ExpressionStatement),
-    BlockStatement(BlockStatement),
+#[derive(Debug)]
+pub enum Body<'a> {
+    VariableDeclaration(VariableDeclaration<'a>),
+    FunctionDeclaration(FunctionDeclaration<'a>),
+    ExpressionStatement(ExpressionStatement<'a>),
+    BlockStatement(BlockStatement<'a>),
 }
 
-enum FunctionParams {
+#[derive(Debug)]
+enum FunctionParams<'a> {
     Identifier(Identifier),
-    AssignmentPattern(AssignmentPattern),
+    AssignmentPattern(AssignmentPattern<'a>),
 }
 
-enum AssignmentPatternRight {
-    Literal(Literal),
+#[derive(Debug)]
+enum AssignmentPatternRight<'a> {
+    Literal(Literal<'a>),
     Identifier(Identifier),
-    MemberExpression(MemberExpression),
-    CallExpression(Option<Box<CallExpression>>),
-    ArrayExpression(ArrayExpression),
-    ObjectExpression(ObjectExpression),
+    MemberExpression(MemberExpression<'a>),
+    CallExpression(Option<Box<CallExpression<'a>>>),
+    ArrayExpression(ArrayExpression<'a>),
+    ObjectExpression(ObjectExpression<'a>),
 }
 
-enum MemberExpressionObject {
+#[derive(Debug)]
+enum MemberExpressionObject<'a> {
     Identifier(Identifier),
-    MemberExpression(Option<Box<MemberExpression>>),
-    CallExpression(Option<Box<CallExpression>>),
-    ArrayExpression(ArrayExpression),
-    ObjectExpression(ObjectExpression),
+    MemberExpression(Option<Box<MemberExpression<'a>>>),
+    CallExpression(Option<Box<CallExpression<'a>>>),
+    ArrayExpression(ArrayExpression<'a>),
+    ObjectExpression(ObjectExpression<'a>),
 }
 
-enum MemberExpressionProperty {
+#[derive(Debug)]
+enum MemberExpressionProperty<'a> {
     Identifier(Identifier),
-    Literal(Literal),
-    CallExpression(Option<Box<CallExpression>>),
-    ObjectExpression(ObjectExpression),
-    ArrayExpression(ArrayExpression),
-    MemberExpression(Option<Box<MemberExpression>>),
+    Literal(Literal<'a>),
+    CallExpression(Option<Box<CallExpression<'a>>>),
+    ObjectExpression(ObjectExpression<'a>),
+    ArrayExpression(ArrayExpression<'a>),
+    MemberExpression(Option<Box<MemberExpression<'a>>>),
 }
 
-enum CallExpressionCallee {
+#[derive(Debug)]
+enum CallExpressionCallee<'a> {
     Identifier(Identifier),
-    MemberExpression(Option<Box<MemberExpression>>),
-    CallExpression(Option<Box<CallExpression>>),
+    MemberExpression(Option<Box<MemberExpression<'a>>>),
+    CallExpression(Option<Box<CallExpression<'a>>>),
 }
 
-enum CallExpressionArgument {
+#[derive(Debug)]
+enum CallExpressionArgument<'a> {
     Identifier(Identifier),
-    Literal(Literal),
-    MemberExpression(Option<Box<MemberExpression>>),
-    CallExpression(Option<Box<CallExpression>>),
-    ObjectExpression(ObjectExpression),
-    ArrayExpression(ArrayExpression),
+    Literal(Literal<'a>),
+    MemberExpression(Option<Box<MemberExpression<'a>>>),
+    CallExpression(Option<Box<CallExpression<'a>>>),
+    ObjectExpression(ObjectExpression<'a>),
+    ArrayExpression(ArrayExpression<'a>),
 }
 
-pub enum Expression {
+#[derive(Debug)]
+pub enum Expression<'a> {
     Identifier(Identifier),
-    ConditionalExpression(Option<Box<ConditionalExpression>>),
-    BinaryExpression(Option<Box<BinaryExpression>>),
-    CallExpression(Option<Box<CallExpression>>),
-    MemberExpression(Option<Box<MemberExpression>>),
-    ArrayExpression(Option<Box<ArrayExpression>>),
-    Literal(Literal),
-    NewExpression(Option<Box<NewExpression>>),
+    ConditionalExpression(Option<Box<ConditionalExpression<'a>>>),
+    BinaryExpression(Option<Box<BinaryExpression<'a>>>),
+    CallExpression(Option<Box<CallExpression<'a>>>),
+    MemberExpression(Option<Box<MemberExpression<'a>>>),
+    ArrayExpression(Option<Box<ArrayExpression<'a>>>),
+    Literal(Literal<'a>),
+    NewExpression(Option<Box<NewExpression<'a>>>),
+    FunctionExpression(FunctionExpression<'a>),
+    ArrowFunctionExpression(ArrowFunctionExpression<'a>),
 }
 
-struct Program {
-    _type: ASTType,
-    body: Vec<Body>,
-    sourceType: SourceType,
+#[derive(Debug)]
+pub struct Program<'a> {
+    pub _type: ASTType,
+    pub body: Vec<Body<'a>>,
+    pub sourceType: SourceType,
 }
 
+#[derive(Debug)]
 pub struct Identifier {
     pub _type: ASTType,
     pub start: usize,
@@ -138,47 +162,67 @@ pub struct Identifier {
     pub name: String,
 }
 
-pub struct VariableDeclarator {
+#[derive(Debug)]
+pub struct VariableDeclarator<'a> {
     pub _type: ASTType,
     pub start: usize,
     pub end: usize,
     pub id: Identifier,
-    pub init: Expression,
+    pub init: Expression<'a>,
 }
 
-pub struct VariableDeclaration {
+#[derive(Debug)]
+pub enum DeclarationKind {
+    Const,
+    Let,
+    Var,
+}
+
+impl DeclarationKind {
+    const Const: &'static str = "const";
+    const Let: &'static str = "let";
+    const Var: &'static str = "var";
+}
+
+#[derive(Debug)]
+pub struct VariableDeclaration<'a> {
     pub _type: ASTType,
     pub start: usize,
     pub end: usize,
-    pub declarations: Vec<VariableDeclarator>,
+    pub declarations: Vec<VariableDeclarator<'a>>,
+    pub kind: DeclarationKind,
 }
 
-pub struct ArrayExpression {
+#[derive(Debug)]
+pub struct ArrayExpression<'a> {
     pub _type: ASTType,
     pub start: usize,
     pub end: usize,
-    pub elements: Vec<Expression>,
+    pub elements: Vec<Expression<'a>>,
 }
 
-struct ObjectExpression {
+#[derive(Debug)]
+struct ObjectExpression<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    properties: Vec<Property>,
+    properties: Vec<Property<'a>>,
 }
 
-struct Property {
-    _type: ASTType,
-    start: usize,
-    end: usize,
-    method: bool,
-    shorthand: bool,
-    computed: bool,
-    key: PropertyKey,
-    value: Expression,
-    kind: Kind,
+#[derive(Debug)]
+pub struct Property<'a> {
+    pub _type: ASTType,
+    pub start: usize,
+    pub end: usize,
+    pub method: bool,
+    pub shorthand: bool,
+    pub computed: bool,
+    pub key: PropertyKey<'a>,
+    pub value: Expression<'a>,
+    pub kind: Kind,
 }
 
+#[derive(Debug)]
 pub enum LiteralType {
     STRING,
     NUMBER,
@@ -195,26 +239,24 @@ impl LiteralType {
     const REGEXP: &'static str = "regexp";
 }
 
-pub struct Regex {
-    pub pattern: &'static str,
-    pub flags: &'static str,
+#[derive(Debug)]
+pub struct Regex<'a> {
+    pub pattern: &'a str,
+    pub flags: &'a str,
 }
 
-pub struct Literal {
+#[derive(Debug)]
+pub struct Literal<'a> {
     pub _type: ASTType,
     pub start: usize,
     pub end: usize,
     pub value: LiteralType,
-    pub raw: &'static str,
-    pub regex: Option<Regex>,
+    pub raw: &'a str,
+    pub regex: Option<Regex<'a>>,
 }
 
-struct ComputedPropertyKey {
-    _type: ASTType,
-    expression: Expression,
-}
-
-struct FunctionDeclaration {
+#[derive(Debug)]
+struct FunctionDeclaration<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
@@ -222,73 +264,107 @@ struct FunctionDeclaration {
     expression: bool,
     generator: bool,
     _async: bool,
-    params: Vec<FunctionParams>,
-    body: BlockStatement,
+    params: Vec<FunctionParams<'a>>,
+    body: BlockStatement<'a>,
 }
 
-pub struct BlockStatement {
+#[derive(Debug)]
+pub struct BlockStatement<'a> {
     pub _type: ASTType,
     pub start: usize,
     pub end: usize,
-    pub body: Vec<Body>,
+    pub body: Vec<Body<'a>>,
 }
 
-struct AssignmentPattern {
+#[derive(Debug)]
+struct AssignmentPattern<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
     left: Identifier,
-    right: AssignmentPatternRight,
+    right: AssignmentPatternRight<'a>,
 }
 
-struct MemberExpression {
+#[derive(Debug)]
+struct MemberExpression<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    object: Expression,
-    property: Expression,
+    object: Expression<'a>,
+    property: Expression<'a>,
     computed: bool,
     optional: bool,
 }
 
-struct CallExpression {
+#[derive(Debug)]
+struct CallExpression<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    callee: Expression,
-    arguments: Vec<Expression>,
+    callee: Expression<'a>,
+    arguments: Vec<Expression<'a>>,
     optional: bool,
 }
 
-struct ExpressionStatement {
+#[derive(Debug)]
+struct ExpressionStatement<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    expression: Expression,
+    expression: Expression<'a>,
 }
 
-struct ConditionalExpression {
+#[derive(Debug)]
+struct ConditionalExpression<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    test: Expression,
-    consequent: Expression,
-    alternate: Expression,
+    test: Expression<'a>,
+    consequent: Expression<'a>,
+    alternate: Expression<'a>,
 }
 
-struct BinaryExpression {
+#[derive(Debug)]
+struct BinaryExpression<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    left: Expression,
+    left: Expression<'a>,
     operator: &'static str,
-    right: Expression,
+    right: Expression<'a>,
 }
 
-struct NewExpression {
+#[derive(Debug)]
+struct NewExpression<'a> {
     _type: ASTType,
     start: usize,
     end: usize,
-    callee: Expression,
-    arguments: Vec<Expression>,
+    callee: Expression<'a>,
+    arguments: Vec<Expression<'a>>,
+}
+
+#[derive(Debug)]
+pub struct FunctionExpression<'a> {
+    pub _type: ASTType,
+    pub start: usize,
+    pub end: usize,
+    pub id: Option<Identifier>,
+    pub expression: bool,
+    pub generator: bool,
+    pub _async: bool,
+    pub params: Vec<Identifier>,
+    pub body: BlockStatement<'a>,
+}
+
+#[derive(Debug)]
+pub struct ArrowFunctionExpression<'a> {
+    pub _type: ASTType,
+    pub start: usize,
+    pub end: usize,
+    pub id: Option<Identifier>,
+    pub expression: bool,
+    pub generator: bool,
+    pub _async: bool,
+    pub params: Vec<Identifier>,
+    pub body: BlockStatement<'a>,
 }

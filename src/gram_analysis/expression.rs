@@ -5,10 +5,7 @@ use crate::{
 
 use super::{array_expression::array_expression, literal_expression::literal_expression};
 
-pub fn expression(
-    tokens: &[Token],
-    cursor: usize,
-) -> Result<GramAnalysisResult<Expression>, &str> {
+pub fn expression(tokens: &[Token], cursor: usize) -> Result<GramAnalysisResult<Expression>, &str> {
     if let Some(token) = tokens.get(cursor) {
         // literal: number, string, boolean, null, undefined, regexp
         if token._type.label == "number" {

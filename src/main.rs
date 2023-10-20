@@ -11,18 +11,21 @@ mod gram_analysis {
     pub mod assignment_expression;
     pub mod block_statement;
     pub mod conditional_expression;
+    pub mod element_list;
     pub mod expression;
     pub mod identifier;
     pub mod literal_expression;
     pub mod logical_and_expression;
     pub mod logical_or_expression;
+    pub mod object_expression;
+    pub mod object_property;
     pub mod program;
     pub mod statement;
     pub mod statement_list;
     pub mod variable_declaration;
     pub mod variable_declaration_list;
     pub mod variable_statement;
-    pub mod element_list;
+    pub mod function_expression;
 }
 
 use crate::gram_analysis::program::program;
@@ -57,13 +60,13 @@ use crate::tokenizer::{tokenizer, TokenValue};
 * <Operator> ::= '=' | '+=' | '-=' | '*=' | '/=' | '%=' | '==' | '===' | '!=' | '!==' | '+' | '-' | '*' | '/' | '%' | '>' | '>=' | '<' | '<=' | '&&' | '||' | '^' | '~' | '|' | '&' | '<<' | '>>' | '>>>'
 * <Identifier> ::= /^[a-zA-Z_$\u00A0-\uFFFF][a-zA-Z0-9_$\u00A0-\uFFFF]*$/
 * <ArrayExpression> ::= '[' <ElementList>? ']'
-* <ElementList> ::= (<Identifier> | <Expression>) (',' (<Identifier> | <Expression>))*
+* <ElementList> ::= (<Identifier> | <Expression>) (',' <ElementList>)*
+* <ObjectExpression> ::= '{' <ObjectProperty>? '}'
+* <ObjectProperty> ::= ('[' <Identifier> ']' ':' | <Identifier> | <string>) <Expression> (',' <ObjectProperty>)*
 */
 
 fn main() {
-    let code = "
-        const t1 = [1, 2]
-    ";
+    let code = "const t1 = [1, 2];{let t2 = \"abc\"}";
 
     match tokenizer(code) {
         Ok(tokens) => {

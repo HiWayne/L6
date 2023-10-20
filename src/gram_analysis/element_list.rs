@@ -2,8 +2,8 @@ use crate::{tokenizer::Token, types::Expression};
 
 use super::expression::expression;
 
-pub struct ElementListResult {
-    pub elements: Vec<Expression>,
+pub struct ElementListResult<'a> {
+    pub elements: Vec<Expression<'a>>,
     pub next_cursor: usize,
 }
 
@@ -18,6 +18,7 @@ pub fn element_list(tokens: &[Token], cursor: usize) -> Result<ElementListResult
                 if token._type.label == "," {
                     next_cursor = value.next_cursor + 1
                 } else {
+                    next_cursor = value.next_cursor;
                     break;
                 }
             } else {

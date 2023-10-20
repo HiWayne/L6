@@ -2,8 +2,8 @@ use crate::{tokenizer::Token, types::VariableDeclarator};
 
 use super::variable_declaration::variable_declaration;
 
-pub struct VariableDeclarationListResult {
-    pub list: Vec<VariableDeclarator>,
+pub struct VariableDeclarationListResult<'a> {
+    pub list: Vec<VariableDeclarator<'a>>,
     pub next_cursor: usize,
 }
 
